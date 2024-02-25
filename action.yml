@@ -74,6 +74,9 @@ runs:
         ref: ${{ inputs.ACTION_REF }}
         submodules: recursive
 
+    - name: install cosign
+      uses: sigstore/cosign-installer@v3.4.0
+
     - name: Install dependencies
       shell: bash
       run: make install-deps
@@ -123,6 +126,18 @@ runs:
         mkdir end_iso
         sha256sum ${{ inputs.IMAGE_NAME }}-${{ inputs.IMAGE_TAG || inputs.VERSION }}.iso > ./end_iso/${{ inputs.IMAGE_NAME }}-${{ inputs.IMAGE_TAG || inputs.VERSION }}-CHECKSUM
         mv ${{ inputs.IMAGE_NAME }}-${{ inputs.IMAGE_TAG || inputs.VERSION }}.iso end_iso/
+
+    - name: sign checksum
+      shell: bash
+      env:
+        COSIGN_YES: "true"
+      run: |
+        cosign sign-blob ./end_iso/${{ inputs.IMAGE_NAME }}-${{ inputs.IMAGE_TAG || inputs.VERSION }}-CHECKSUM --bundle ./end_iso/${{ inputs.IMAGE_NAME }}-${{ inputs.IMAGE_TAG || inputs.VERSION }}.bundle
+        cosign verify-blob \
+          ./end_iso/${{ inputs.IMAGE_NAME }}-${{ inputs.IMAGE_TAG || inputs.VERSION }}-CHECKSUM \
+          --bundle ./end_iso/${{ inputs.IMAGE_NAME }}-${{ inputs.IMAGE_TAG || inputs.VERSION }}.bundle
+          --certificate-identity-regexp 'https://github.com/${{ github.workflow_ref }}' \
+          --certificate-oidc-issuer 'https://token.actions.githubusercontent.com'
 
     - name: Upload ISO as artifact
       uses: actions/upload-artifact@v4

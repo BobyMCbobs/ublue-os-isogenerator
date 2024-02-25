@@ -18,9 +18,14 @@ jobs:
     container:
       image: fedora:39
       options: "--privileged"
+      env:
+        GITHUB_HOST: ${{ github.server_url }}
+        ACTIONS_ID_TOKEN_REQUEST_TOKEN: ${{ env.ACTIONS_ID_TOKEN_REQUEST_TOKEN }}
+        ACTIONS_ID_TOKEN_REQUEST_URL: ${{ env.ACTIONS_ID_TOKEN_REQUEST_URL }}
     permissions:
       contents: read
       packages: write
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
